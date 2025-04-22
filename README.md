@@ -7,4 +7,5 @@
 ### 1. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+pip3 install -r requirements.txt
+python3 server.py
