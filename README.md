@@ -9,6 +9,8 @@
 ```bash
 pip3 install -r requirements.txt
 
+
 ### 2. Start Server
+
 ```bash
 python3 server.py
