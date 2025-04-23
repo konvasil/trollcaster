@@ -1,29 +1,76 @@
-<!-- public/index.html -->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Troll Chat</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
-</head>
-<body>
-    <h1>Troll Message Detection Chat</h1>
-    <input type="text" id="messageInput" placeholder="Enter message">
-    <button id="sendButton">Send</button>
+    <head>
+        ...
+        <link rel="stylesheet" href="style.css">
+        <script src="https://cdn.socket.io/4.5.4/socket.io.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.min.js"></script>
+      </head>
+      <body>
+        <div class="container">
+          <h1>💬 TrollCaster Chat</h1>
+          <div id="chat-box"></div>
+          <form id="chat-form">
+            <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off" required />
+            <button type="submit">Send</button>
+          </form>
+        </div>      
 
-    <script>
-        var socket = io.connect('http://127.0.0.1:8000');
+  <script>
+    const socket = io();
 
-        document.getElementById('sendButton').onclick = function() {
-            var message = document.getElementById('messageInput').value;
-            socket.send(message);
-            document.getElementById('messageInput').value = ''; // Clear input
-        };
+    let trigger = false; let triggerTime = 0;
 
-        socket.on('message', function(msg) {
-            console.log('Message from server:', msg);
-        });
-    </script>
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('message-input');
+    const chatBox = document.getElementById('chat-box');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const message = input.value;
+      if (message.trim() === '') return;
+      socket.emit('message', message);
+      addMessage("🧑 You", message);
+      input.value = '';
+    });
+
+    function addMessage(sender, text) {
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('chat-message');
+      msgDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    socket.on('message', (msg) => {
+      addMessage('👤 Stranger', msg);
+    });
+
+    socket.on('troll', () => {
+      console.log("🚨 Troll detected! Activating visual trigger.");
+      activateTrigger();  // Call sketch.js function
+    });
+    
+    function setup() {
+        createCanvas(windowWidth, windowHeight);
+        noStroke();
+    }
+    
+    function draw() {
+        background(0, 10); // subtle fade effect
+    
+        if (trigger && millis() - triggerTime < 1000) {
+            for (let i = 0; i < 50; i++) {
+                fill(random(255), 0, random(255), 150);
+                square(random(width), random(height), random(10, 100));
+            }
+        }
+    }
+    
+    function activateTrigger() {
+        trigger = true;
+        triggerTime = millis();
+    }
+  </script>
 </body>
 </html>

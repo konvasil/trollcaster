@@ -1,12 +1,12 @@
 import pickle
 import os
 from flask import Flask, send_from_directory
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from pythonosc import osc_message_builder
 from pythonosc.udp_client import SimpleUDPClient
 
-# Load the trained ML model from the correct path
+# Load the trained ML model from the 'ml' folder
 model_path = os.path.join('ml', 'model.pkl')
 with open(model_path, 'rb') as model_file:
     model = pickle.load(model_file)
@@ -21,17 +21,28 @@ osc_client = SimpleUDPClient('127.0.0.1', 57120)
 def index():
     return send_from_directory('public', 'index.html')
 
+@app.route('/style.css')
+def style():
+    return send_from_directory('public', 'style.css')
+
 @socketio.on('message')
 def handle_message(message):
-    print(f"Received message: {message}")
+    print(f"[INFO] Received message: {message}")
+    
+    # Broadcast the message to all users
+    emit('message', message, broadcast=True)
 
+    # Use model to detect trolling
     prediction = model.predict([message])[0]
     if prediction == 1:
-        print("⚠️ Troll message detected! Sending OSC trigger.")
+        print("⚠️ [TROLL DETECTED] Triggering OSC and Visuals!")
         osc_message = osc_message_builder.OscMessageBuilder(address="/trigger")
         osc_message.add_arg(1)
         osc_client.send(osc_message.build())
 
+        # Notify clients to trigger p5.js visuals
+        emit('troll', broadcast=True)
+
 if __name__ == '__main__':
-    print("Starting the server on http://127.0.0.1:8000...")
+    print("✅ Server running at: http://127.0.0.1:8000")
     socketio.run(app, host='0.0.0.0', port=8000)
